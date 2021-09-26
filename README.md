@@ -2,9 +2,9 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/dtomasi/shardedmap.svg)](https://pkg.go.dev/github.com/dtomasi/shardedmap)
 [![CodeFactor](https://www.codefactor.io/repository/github/dtomasi/shardedmap/badge?s=1266a4bec84923fd1abf7d127bccc625b095c592)](https://www.codefactor.io/repository/github/dtomasi/shardedmap)
-![Go Unit Tests](https://github.com/dtomasi/shardedmap/actions/workflows/build.yml/badge.svg)
-![Go Benchmarks](https://github.com/dtomasi/shardedmap/actions/workflows/benchmark_cob.yml/badge.svg)
-![CodeQL](https://github.com/dtomasi/shardedmap/actions/workflows/codeql-analysis.yml/badge.svg)
+[![Linting and Testing](https://github.com/dtomasi/shardedmap/actions/workflows/build.yml/badge.svg)](https://github.com/dtomasi/shardedmap/actions/workflows/build.yml)
+[![Bench](https://github.com/dtomasi/shardedmap/actions/workflows/benchmark_cob.yml/badge.svg)](https://github.com/dtomasi/shardedmap/actions/workflows/benchmark_cob.yml)
+[![CodeQL](https://github.com/dtomasi/shardedmap/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/dtomasi/shardedmap/actions/workflows/codeql-analysis.yml)
 [![codecov](https://codecov.io/gh/dtomasi/shardedmap/branch/main/graph/badge.svg?token=9fqDqF2uxF)](https://codecov.io/gh/dtomasi/shardedmap)
 
 This project contains a threadsafe sharded map implementation in Go.
