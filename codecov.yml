@@ -2,7 +2,3 @@ coverage:
   precision: 2
   round: up
   range: "60...100"
-
-ignore:
-  - "interfaces/**"
-  - "keys/**"
