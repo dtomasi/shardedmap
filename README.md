@@ -1,7 +1,7 @@
 # shardedmap
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/dtomasi/shardedmap.svg)](https://pkg.go.dev/github.com/dtomasi/shardedmap)
-[![CodeFactor](https://www.codefactor.io/repository/github/dtomasi/shardedmap/badge)](https://www.codefactor.io/repository/github/dtomasi/shardedmap)
+[![CodeFactor](https://www.codefactor.io/repository/github/dtomasi/shardedmap/badge?s=1266a4bec84923fd1abf7d127bccc625b095c592)](https://www.codefactor.io/repository/github/dtomasi/shardedmap)
 ![Go Unit Tests](https://github.com/dtomasi/shardedmap/actions/workflows/build.yml/badge.svg)
 ![Go Benchmarks](https://github.com/dtomasi/shardedmap/actions/workflows/benchmark_cob.yml/badge.svg)
 ![CodeQL](https://github.com/dtomasi/shardedmap/actions/workflows/codeql-analysis.yml/badge.svg)
