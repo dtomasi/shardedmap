@@ -4,9 +4,12 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dtomasi/shardedmap"
 	"math/rand"
+	"runtime"
 	"testing"
 	"time"
 )
+
+const sleepAfterBenchmarkDuration = time.Second * 1
 
 //nolint:gochecknoinits
 func init() {
@@ -40,6 +43,11 @@ func runSequentialBenchmarkSet(
 	for i := 0; i < b.N; i++ {
 		instance.Set(randomKey, testData[randomKey])
 	}
+
+	// Give go some time to breath
+	b.StopTimer()
+	runtime.GC()
+	time.Sleep(sleepAfterBenchmarkDuration)
 }
 
 func Benchmark_ShardedMap_Sequential_ShardCount_1__Provider_Mutex__Hash_32__Set(b *testing.B) {
@@ -100,6 +108,10 @@ func runParallelBenchmarkSet(
 			instance.Set(randomKey, testData[randomKey])
 		}
 	})
+	// Give go some time to breath
+	b.StopTimer()
+	runtime.GC()
+	time.Sleep(sleepAfterBenchmarkDuration)
 }
 
 func Benchmark_ShardedMap_Parallel_ShardCount_1__Provider_Mutex__Hash_32__Set(b *testing.B) {
@@ -163,6 +175,10 @@ func runSequentialBenchmarkGet(
 			b.FailNow()
 		}
 	}
+	// Give go some time to breath
+	b.StopTimer()
+	runtime.GC()
+	time.Sleep(sleepAfterBenchmarkDuration)
 }
 
 func Benchmark_ShardedMap_Sequential_ShardCount_1__Provider_Mutex__Hash_32__Get(b *testing.B) {
@@ -226,6 +242,10 @@ func runParallelBenchmarkGet(
 			}
 		}
 	})
+	// Give go some time to breath
+	b.StopTimer()
+	runtime.GC()
+	time.Sleep(sleepAfterBenchmarkDuration)
 }
 
 func Benchmark_ShardedMap_Parallel_ShardCount_1__Provider_Mutex__Hash_32__Get(b *testing.B) {
