@@ -17,7 +17,7 @@ type Shard interface {
 	All() ShardDataMap
 
 	// Get returns a value from Collection.
-	Get(uint) interface{}
+	Get(uint) (interface{}, error)
 
 	// Set sets a value to Collection.
 	Set(uint, ShardTuple)

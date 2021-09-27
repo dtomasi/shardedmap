@@ -170,7 +170,7 @@ func runSequentialBenchmarkGet(
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		v := instance.Get(randomKey)
+		v := instance.MustGet(randomKey)
 		if v == nil {
 			b.FailNow()
 		}
@@ -236,7 +236,7 @@ func runParallelBenchmarkGet(
 	b.RunParallel(func(pb *testing.PB) {
 		randomKey := pickRandomKeyFromDataSet(testData)
 		for pb.Next() {
-			v := instance.Get(randomKey)
+			v := instance.MustGet(randomKey)
 			if v == nil {
 				b.FailNow()
 			}

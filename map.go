@@ -62,25 +62,19 @@ func (m *Map) getKeyHashAndShardFromKey(key string) (keyHash uint, shard Shard) 
 	return
 }
 
-func (m *Map) forEachShard(cb func(shard Shard)) {
-	for j := 0; j < int(m.shardCount); j++ {
-		cb(m.shards[j])
-	}
-}
-
 func (m *Map) RangeWithCallback(cb func(key string, value interface{}) interface{}) {
-	m.forEachShard(func(shard Shard) {
+	for _, shard := range m.shards {
 		for keyHash, t := range shard.All() {
 			newVal := cb(t.GetKey(), t.GetValue())
 			if newVal != nil {
 				shard.Set(keyHash, NewTuple(t.GetKey(), newVal))
 			}
 		}
-	})
+	}
 }
 
 // Range allows iterating over a buffered data set.
-func (m *Map) Range() chan ShardTuple {
+func (m *Map) Range() <-chan ShardTuple {
 	// The result channel which we return
 	resChan := make(chan ShardTuple, m.Count())
 	defer close(resChan)
@@ -90,7 +84,7 @@ func (m *Map) Range() chan ShardTuple {
 	defer close(shardDoneChan)
 
 	// loop over shards
-	m.forEachShard(func(s Shard) {
+	for _, s := range m.shards {
 		// Fetch all data in a separate goroutine
 		go func(shard Shard, doneChan chan bool) {
 			// Push results to resChan
@@ -100,7 +94,7 @@ func (m *Map) Range() chan ShardTuple {
 			// Notify that we are done here
 			doneChan <- true
 		}(s, shardDoneChan)
-	})
+	}
 
 	var shardsDoneCount uint
 
@@ -116,37 +110,80 @@ func (m *Map) Range() chan ShardTuple {
 	}
 }
 
+// Count returns the count of all elements across all shards.
 func (m *Map) Count() int {
-	var count uint
+	// The result channel which we return
+	countChan := make(chan uint)
+	defer close(countChan)
 
-	m.forEachShard(func(shard Shard) {
-		count += shard.Count()
-	})
+	// A channel to which every shard if its is done
+	shardDoneChan := make(chan bool, m.shardCount)
+	defer close(shardDoneChan)
 
-	return int(count)
-}
+	// loop over shards
+	for _, s := range m.shards {
+		// Fetch all data in a separate goroutine
+		go func(shard Shard, doneChan chan bool) {
+			// Push results to resChan
+			countChan <- shard.Count()
+			// Notify that we are done here
+			doneChan <- true
+		}(s, shardDoneChan)
+	}
 
-func (m *Map) All() map[string]interface{} {
-	allKV := make(map[string]interface{})
+	var (
+		totalCount      uint
+		shardsDoneCount uint
+	)
 
-	m.forEachShard(func(shard Shard) {
-		for _, t := range shard.All() {
-			allKV[t.GetKey()] = t.GetValue()
+	// Wait for all to finish
+	for {
+		select {
+		case countFromShard := <-countChan:
+			totalCount += countFromShard
+
+		case <-shardDoneChan:
+			shardsDoneCount++
+			if shardsDoneCount == m.shardCount {
+				return int(totalCount)
+			}
 		}
-	})
-
-	return allKV
+	}
 }
 
+// All returns a flat map of all keys and values across all shards.
+func (m *Map) All() map[string]interface{} {
+	allData := make(map[string]interface{})
+
+	for valTuple := range m.Range() {
+		allData[valTuple.GetKey()] = valTuple.GetValue()
+	}
+
+	return allData
+}
+
+// Clear clears all data across all shards.
 func (m *Map) Clear() {
-	m.forEachShard(func(shard Shard) {
+	for _, shard := range m.shards {
 		shard.Clear()
-	})
+	}
 }
 
-func (m *Map) Get(key string) interface{} {
+// Get returns the value for given key or an error.
+func (m *Map) Get(key string) (interface{}, error) {
 	keyHash, shard := m.getKeyHashAndShardFromKey(key)
-	val := shard.Get(keyHash)
+	val, err := shard.Get(keyHash)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return val, nil
+}
+
+// MustGet returns the value for a given key or nil.
+func (m *Map) MustGet(key string) interface{} {
+	val, _ := m.Get(key)
 
 	return val
 }

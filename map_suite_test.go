@@ -31,7 +31,8 @@ func (s *MapTestSuite) SetupTest() { // Generate test data
 
 func (s *MapTestSuite) TestGet() {
 	k := pickRandomKeyFromDataSet(s.testDataSet)
-	v := s.instance.Get(k)
+	v, err := s.instance.Get(k)
+	s.NoError(err)
 	s.Equal(s.testDataSet[k], v)
 }
 
@@ -88,7 +89,7 @@ func (s *MapTestSuite) TestRangeWithCallback() {
 
 	// As we have overwritten each value with "empty" ... Let´s check a random key
 	randomKey := pickRandomKeyFromDataSet(s.testDataSet)
-	s.Equal("empty", s.instance.Get(randomKey))
+	s.Equal("empty", s.instance.MustGet(randomKey))
 }
 
 func (s *MapTestSuite) TestRange() {

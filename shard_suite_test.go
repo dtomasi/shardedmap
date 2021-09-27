@@ -37,7 +37,8 @@ func (s *ShardTestSuite) SetupTest() {
 
 func (s *ShardTestSuite) TestGet() {
 	k := pickRandomKeyFromDataSet(s.testDataSet)
-	v := s.instance.Get(shardedmap.HashFnv1a64(k))
+	v, err := s.instance.Get(shardedmap.HashFnv1a64(k))
+	s.NoError(err)
 	s.Equal(s.testDataSet[k], v)
 }
 

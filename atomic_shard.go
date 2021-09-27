@@ -1,6 +1,7 @@
 package shardedmap
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 )
@@ -31,8 +32,13 @@ func (s *AtomicShard) All() ShardDataMap {
 }
 
 // Get see: interfaces.Shard.
-func (s *AtomicShard) Get(key uint) interface{} {
-	return s.getValueMap()[key].GetValue()
+func (s *AtomicShard) Get(key uint) (interface{}, error) {
+	tuple, ok := s.getValueMap()[key]
+	if !ok {
+		return nil, errors.New("not found") // nolint
+	}
+
+	return tuple.GetValue(), nil
 }
 
 // Set see: interfaces.Shard.

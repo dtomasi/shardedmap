@@ -1,6 +1,7 @@
 package shardedmap
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -26,11 +27,16 @@ func (s *MutexShard) All() ShardDataMap {
 }
 
 // Get see: interfaces.Collection.
-func (s *MutexShard) Get(key uint) interface{} {
+func (s *MutexShard) Get(key uint) (interface{}, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.data[key].GetValue()
+	tuple, ok := s.data[key]
+	if !ok {
+		return nil, errors.New("not found") // nolint
+	}
+
+	return tuple.GetValue(), nil
 }
 
 // Set see: interfaces.Collection.
