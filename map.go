@@ -79,10 +79,42 @@ func (m *Map) RangeWithCallback(cb func(key string, value interface{}) interface
 	})
 }
 
-// TODO: Implement range with channel for easily use range
-// func (m *Map) Range() chan i.ShardTuple {
-// 	panic("not implemented")
-// }
+// Range allows iterating over a buffered data set.
+func (m *Map) Range() chan ShardTuple {
+	// The result channel which we return
+	resChan := make(chan ShardTuple, m.Count())
+	defer close(resChan)
+
+	// A channel to which every shard if its is done
+	shardDoneChan := make(chan bool, m.shardCount)
+	defer close(shardDoneChan)
+
+	// loop over shards
+	m.forEachShard(func(s Shard) {
+		// Fetch all data in a separate goroutine
+		go func(shard Shard, doneChan chan bool) {
+			// Push results to resChan
+			for _, v := range shard.All() {
+				resChan <- v
+			}
+			// Notify that we are done here
+			doneChan <- true
+		}(s, shardDoneChan)
+	})
+
+	var shardsDoneCount uint
+
+	// Wait for all to finish
+	for { // nolint:gosimple
+		select {
+		case <-shardDoneChan:
+			shardsDoneCount++
+			if shardsDoneCount == m.shardCount {
+				return resChan
+			}
+		}
+	}
+}
 
 func (m *Map) Count() int {
 	var count uint

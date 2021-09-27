@@ -91,14 +91,28 @@ func (s *MapTestSuite) TestRangeWithCallback() {
 	s.Equal("empty", s.instance.Get(randomKey))
 }
 
+func (s *MapTestSuite) TestRange() {
+	for valueTuple := range s.instance.Range() {
+		// Best effort here ... Value could be a map or something that we cannot compare
+		// We can probably compare at least a few values here.
+		if reflect.TypeOf(valueTuple.GetValue()).Comparable() {
+			s.Equal(s.testDataSet[valueTuple.GetKey()], valueTuple.GetValue())
+		}
+	}
+}
+
 func (s *MapTestSuite) TestJsonMarshalAndUnmarshal() {
 	// MarshalJSON
 	jsonBytes, marshalErr := json.Marshal(s.instance)
 	s.NoError(marshalErr)
 	s.True(json.Valid(jsonBytes))
 
+	// UnmarshalJSON invalid json throws error
+	unmarshalInvalidErr := s.instance.UnmarshalJSON([]byte("this/is?invalid!JSON"))
+	s.Error(unmarshalInvalidErr)
+
 	// UnmarshalJSON
-	var m *shardedmap.Map // Note: This will create a map with defaults set
+	var m *shardedmap.Map
 	unmarshalErr := json.Unmarshal(jsonBytes, &m)
 	s.NoError(unmarshalErr)
 	s.Equal(len(s.testDataSet), m.Count())
