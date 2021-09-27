@@ -1,6 +1,7 @@
 package shardedmap_test
 
 import (
+	"encoding/json"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dtomasi/shardedmap"
 	"github.com/stretchr/testify/suite"
@@ -88,4 +89,17 @@ func (s *MapTestSuite) TestRangeWithCallback() {
 	// As we have overwritten each value with "empty" ... Let´s check a random key
 	randomKey := pickRandomKeyFromDataSet(s.testDataSet)
 	s.Equal("empty", s.instance.Get(randomKey))
+}
+
+func (s *MapTestSuite) TestJsonMarshalAndUnmarshal() {
+	// MarshalJSON
+	jsonBytes, marshalErr := json.Marshal(s.instance)
+	s.NoError(marshalErr)
+	s.True(json.Valid(jsonBytes))
+
+	// UnmarshalJSON
+	var m *shardedmap.Map // Note: This will create a map with defaults set
+	unmarshalErr := json.Unmarshal(jsonBytes, &m)
+	s.NoError(unmarshalErr)
+	s.Equal(len(s.testDataSet), m.Count())
 }

@@ -1,5 +1,9 @@
 package shardedmap
 
+import (
+	"encoding/json"
+)
+
 // DefaultShardCount allows overwriting package default for New().
 var (
 	DefaultShardCount        uint              = 8             //nolint:gochecknoglobals
@@ -17,23 +21,30 @@ type Map struct {
 
 // New creates a new sharded map.
 func New(opts ...MapOption) *Map {
-	m := &Map{ //nolint:exhaustivestruct
-		shardCount:        DefaultShardCount,
-		shardProviderFunc: DefaultShardProviderFunc,
-		keyHashFunc:       DefaultKeyHashFunc,
-	}
+	m := &Map{} //nolint:exhaustivestruct
+	m.applyDefaults()
 
 	for _, opt := range opts {
 		opt(m)
 	}
 
+	m.initShards()
+
+	return m
+}
+
+func (m *Map) applyDefaults() {
+	m.shardCount = DefaultShardCount
+	m.shardProviderFunc = DefaultShardProviderFunc
+	m.keyHashFunc = DefaultKeyHashFunc
+}
+
+func (m *Map) initShards() {
 	m.shards = make([]Shard, m.shardCount)
 
 	for j := 0; j < int(m.shardCount); j++ {
 		m.shards[j] = m.shardProviderFunc()
 	}
-
-	return m
 }
 
 func (m *Map) getKeyHash(key string) uint {
@@ -123,4 +134,32 @@ func (m *Map) Has(key string) bool {
 func (m *Map) Remove(key string) {
 	keyHash, shard := m.getKeyHashAndShardFromKey(key)
 	shard.Remove(keyHash)
+}
+
+// UnmarshalJSON supports custom unmarshaling by implementing json.Unmarshaler interface.
+func (m *Map) UnmarshalJSON(b []byte) error {
+	if m.shards == nil && m.shardCount == 0 { // This is an empty Map
+		m.applyDefaults()
+		m.initShards()
+	}
+
+	flatMap := make(map[string]interface{})
+	err := json.Unmarshal(b, &flatMap)
+
+	if err != nil {
+		return err
+	}
+
+	for k, v := range flatMap {
+		m.Set(k, v)
+	}
+
+	return nil
+}
+
+// MarshalJSON supports custom marshaling by implementing json.Marshaler interface.
+func (m *Map) MarshalJSON() ([]byte, error) {
+	flatMap := m.All()
+
+	return json.Marshal(flatMap)
 }
