@@ -40,6 +40,10 @@ func (s *ShardTestSuite) TestGet() {
 	v, err := s.instance.Get(shardedmap.HashFnv1a64(k))
 	s.NoError(err)
 	s.Equal(s.testDataSet[k], v)
+
+	// Check error
+	_, err = s.instance.Get(0)
+	s.Error(err)
 }
 
 func (s *ShardTestSuite) TestHas() {

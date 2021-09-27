@@ -34,6 +34,10 @@ func (s *MapTestSuite) TestGet() {
 	v, err := s.instance.Get(k)
 	s.NoError(err)
 	s.Equal(s.testDataSet[k], v)
+
+	// Check error
+	_, err = s.instance.Get("____not_existing_key")
+	s.Error(err)
 }
 
 func (s *MapTestSuite) TestHas() {
