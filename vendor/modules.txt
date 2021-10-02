@@ -1,19 +1,13 @@
-# github.com/brianvoe/gofakeit/v6 v6.8.0
+# github.com/brianvoe/gofakeit/v6 v6.9.0
 ## explicit; go 1.15
 github.com/brianvoe/gofakeit/v6
 github.com/brianvoe/gofakeit/v6/data
-# github.com/bxcodec/faker/v3 v3.6.0
-## explicit; go 1.12
 # github.com/davecgh/go-spew v1.1.0
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/dchest/siphash v1.1.0
-## explicit
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/objx v0.1.0
-## explicit
 # github.com/stretchr/testify v1.7.0
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
