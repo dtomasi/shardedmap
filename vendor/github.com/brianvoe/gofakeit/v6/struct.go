@@ -47,7 +47,7 @@ func r(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) err
 	case reflect.Array, reflect.Slice:
 		return rSlice(ra, t, v, tag, size)
 	case reflect.Map:
-		return rMap(ra, t, v, tag)
+		return rMap(ra, t, v, tag, size)
 	}
 
 	return nil
@@ -131,9 +131,73 @@ func rStruct(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string) error {
 	return nil
 }
 
-func rMap(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string) error {
-	// If tag is set lets try to set the struct values from the tag response
+func rPointer(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) error {
+	elemT := t.Elem()
+	if v.IsNil() {
+		nv := reflect.New(elemT)
+		err := r(ra, elemT, nv.Elem(), tag, size)
+		if err != nil {
+			return err
+		}
+		v.Set(nv)
+	} else {
+		err := r(ra, elemT, v.Elem(), tag, size)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func rSlice(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) error {
+	// If you cant even set it dont even try
+	if !v.CanSet() {
+		return errors.New("cannot set slice")
+	}
+
+	// Grab original size to use if needed for sub arrays
+	ogSize := size
+
+	// If the value has a len and is less than the size
+	// use that instead of the requested size
+	elemLen := v.Len()
+	if elemLen == 0 && size == -1 {
+		size = number(ra, 1, 10)
+	} else if elemLen != 0 && (size == -1 || elemLen < size) {
+		size = elemLen
+	}
+
+	// Get the element type
+	elemT := t.Elem()
+
+	// Loop through the elements length and set based upon the index
+	for i := 0; i < size; i++ {
+		nv := reflect.New(elemT)
+		err := r(ra, elemT, nv.Elem(), tag, ogSize)
+		if err != nil {
+			return err
+		}
+
+		// If values are already set fill them up, otherwise append
+		if elemLen != 0 {
+			v.Index(i).Set(reflect.Indirect(nv))
+		} else {
+			v.Set(reflect.Append(reflect.Indirect(v), reflect.Indirect(nv)))
+		}
+	}
+
+	return nil
+}
+
+func rMap(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) error {
+	// If you cant even set it dont even try
+	if !v.CanSet() {
+		return errors.New("cannot set slice")
+	}
+
 	if tag != "" {
+		// If tag is set lets try to set the struct values from the tag response
 		fName, fParams := parseNameAndParamsFromTag(tag)
 		// Check to see if its a replaceable lookup function
 		if info := GetFuncLookup(fName); info != nil {
@@ -166,70 +230,42 @@ func rMap(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string) error {
 			return nil
 		}
 	}
-	return nil
-}
 
-func rPointer(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) error {
-	elemT := t.Elem()
-	if v.IsNil() {
-		nv := reflect.New(elemT)
-		err := r(ra, elemT, nv.Elem(), tag, size)
+	// Has no tag or func lookup failed generate map with random data
+
+	// Set a size
+	newSize := size
+	if newSize == -1 {
+		newSize = number(ra, 1, 10)
+	}
+
+	// Create new map based upon map key value type
+	mapType := reflect.MapOf(t.Key(), t.Elem())
+	newMap := reflect.MakeMap(mapType)
+
+	for i := 0; i < newSize; i++ {
+		// Create new key
+		mapIndex := reflect.New(t.Key())
+		err := r(ra, t.Key(), mapIndex.Elem(), "", -1)
 		if err != nil {
 			return err
 		}
-		v.Set(nv)
-	} else {
-		err := r(ra, elemT, v.Elem(), tag, size)
+
+		// Create new value
+		mapValue := reflect.New(t.Elem())
+		err = r(ra, t.Elem(), mapValue.Elem(), "", -1)
 		if err != nil {
 			return err
 		}
+
+		newMap.SetMapIndex(mapIndex.Elem(), mapValue.Elem())
 	}
 
-	return nil
-}
-
-func rSlice(ra *rand.Rand, t reflect.Type, v reflect.Value, tag string, size int) error {
-	// If you cant even set it dont even try
-	if !v.CanSet() {
-		return errors.New("Cannot set slice")
-	}
-
-	// Grab original size to use if needed for sub arrays
-	ogSize := size
-
-	// If the value has a len and is less than the size
-	// use that instead of the requested size
-	elemLen := v.Len()
-	if elemLen == 0 && size == -1 {
-		size = number(ra, 1, 10)
-	} else if elemLen != 0 && (size == -1 || elemLen < size) {
-		size = elemLen
-	}
-
-	// Get the element type
-	elemT := t.Elem()
-
-	// If values are already set fill them up, otherwise append
-	if v.Len() != 0 {
-		// Loop through the elements length and set based upon the index
-		for i := 0; i < size; i++ {
-			nv := reflect.New(elemT)
-			err := r(ra, elemT, nv.Elem(), tag, ogSize)
-			if err != nil {
-				return err
-			}
-			v.Index(i).Set(reflect.Indirect(nv))
-		}
+	// Set newMap into struct field
+	if t.Kind() == reflect.Ptr {
+		v.Set(newMap.Elem())
 	} else {
-		// Loop through the size and append and set
-		for i := 0; i < size; i++ {
-			nv := reflect.New(elemT)
-			err := r(ra, elemT, nv.Elem(), tag, ogSize)
-			if err != nil {
-				return err
-			}
-			v.Set(reflect.Append(reflect.Indirect(v), reflect.Indirect(nv)))
-		}
+		v.Set(newMap)
 	}
 
 	return nil
@@ -343,21 +379,31 @@ func rBool(ra *rand.Rand, v reflect.Value, tag string) error {
 // rTime will set a time.Time field the best it can from either the default date tag or from the generate tag
 func rTime(ra *rand.Rand, t reflect.StructField, v reflect.Value, tag string) error {
 	if tag != "" {
-		timeFormat, timeFormatOK := t.Tag.Lookup("format")
-		if !timeFormatOK {
-			timeFormat = time.RFC3339
-		}
-
-		timeFormat = javaDateFormatToGolangDateFormat(timeFormat)
-
 		// Generate time
 		timeOutput := generate(ra, tag)
 
+		// Check to see if they are passing in a format	to parse the time
+		timeFormat, timeFormatOK := t.Tag.Lookup("format")
+		if timeFormatOK {
+			timeFormat = javaDateFormatToGolangDateFormat(timeFormat)
+		} else {
+			// If tag == "{date}" use time.RFC3339
+			// They are attempting to use the default date lookup
+			if tag == "{date}" {
+				timeFormat = time.RFC3339
+			} else {
+				// Default format of time.Now().String()
+				timeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
+			}
+		}
+
 		// If output is larger than format cut the output
+		// This helps us avoid errors from time.Parse
 		if len(timeOutput) > len(timeFormat) {
 			timeOutput = timeOutput[:len(timeFormat)]
 		}
 
+		// Attempt to parse the time
 		timeStruct, err := time.Parse(timeFormat, timeOutput)
 		if err != nil {
 			return err
