@@ -2,7 +2,7 @@ package gofakeit
 
 import (
 	"fmt"
-	rand "math/rand"
+	"math/rand"
 	"strconv"
 	"sync"
 )
@@ -53,7 +53,17 @@ func initLookup() {
 	addBeerLookup()
 	addCarLookup()
 	addPersonLookup()
-	addWordLookup()
+	addWordGeneralLookup()
+	addWordNounLookup()
+	addWordVerbLookup()
+	addWordAdverbLookup()
+	addWordPrepositionLookup()
+	addWordAdjectiveLookup()
+	addWordPronounLookup()
+	addWordConnectiveLookup()
+	addWordPhraseLookup()
+	addWordSentenceLookup()
+	addWordGrammerLookup()
 	addLoremLookup()
 	addGenerateLookup()
 	addMiscLookup()
@@ -78,6 +88,8 @@ func initLookup() {
 	addFoodLookup()
 	addAppLookup()
 	addWeightedLookup()
+	addMinecraftLookup()
+	addCelebrityLookup()
 }
 
 // NewMapParams will create a new MapParams
