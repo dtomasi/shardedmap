@@ -1,6 +1,6 @@
 package gofakeit
 
-import rand "math/rand"
+import "math/rand"
 
 // Letter will generate a single random lower case ASCII letter
 func Letter() string { return letter(globalFaker.Rand) }
@@ -216,6 +216,7 @@ func addStringLookup() {
 		Description: "Shuffle an array of strings",
 		Example:     "hello,world,whats,up => whats,world,hello,up",
 		Output:      "[]string",
+		ContentType: "application/json",
 		Params: []Param{
 			{Field: "strs", Display: "Strings", Type: "[]string", Description: "Delimited separated strings"},
 		},

@@ -3,7 +3,7 @@ module github.com/dtomasi/shardedmap
 go 1.17
 
 require (
-	github.com/brianvoe/gofakeit/v6 v6.10.0
+	github.com/brianvoe/gofakeit/v6 v6.14.5
 	github.com/stretchr/testify v1.7.0
 )
 
