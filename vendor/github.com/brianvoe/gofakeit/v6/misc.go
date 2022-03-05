@@ -8,6 +8,12 @@ import (
 	"github.com/brianvoe/gofakeit/v6/data"
 )
 
+// const is32bit = (32 << uintptr(^uintptr(0)>>63)) == 32
+const minUint = 0
+const maxUint = ^uint(0)
+const minInt = -maxInt - 1
+const maxInt = int(^uint(0) >> 1)
+
 // Bool will generate a random boolean value
 func Bool() bool { return boolFunc(globalFaker.Rand) }
 
@@ -100,6 +106,17 @@ func flipACoin(r *rand.Rand) string {
 	}
 
 	return "Tails"
+}
+
+// RandomMapKey will return a random key from a map
+func RandomMapKey(mapI interface{}) interface{} { return randomMapKey(globalFaker.Rand, mapI) }
+
+// RandomMapKey will return a random key from a map
+func (f *Faker) RandomMapKey(mapI interface{}) interface{} { return randomMapKey(f.Rand, mapI) }
+
+func randomMapKey(r *rand.Rand, mapI interface{}) interface{} {
+	keys := reflect.ValueOf(mapI).MapKeys()
+	return keys[r.Intn(len(keys))].Interface()
 }
 
 // Categories will return a map string array of available data categories and sub categories
