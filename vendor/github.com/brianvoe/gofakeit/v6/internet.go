@@ -106,7 +106,10 @@ func HTTPStatusCode() int { return httpStatusCode(globalFaker.Rand) }
 // HTTPStatusCode will generate a random status code
 func (f *Faker) HTTPStatusCode() int { return httpStatusCode(f.Rand) }
 
-func httpStatusCode(r *rand.Rand) int { return getRandIntValue(r, []string{"status_code", "general"}) }
+func httpStatusCode(r *rand.Rand) int {
+	randInt, _ := strconv.Atoi(getRandValue(r, []string{"internet", "http_status_general"}))
+	return randInt
+}
 
 // HTTPStatusCodeSimple will generate a random simple status code
 func HTTPStatusCodeSimple() int { return httpStatusCodeSimple(globalFaker.Rand) }
@@ -115,7 +118,8 @@ func HTTPStatusCodeSimple() int { return httpStatusCodeSimple(globalFaker.Rand) 
 func (f *Faker) HTTPStatusCodeSimple() int { return httpStatusCodeSimple(f.Rand) }
 
 func httpStatusCodeSimple(r *rand.Rand) int {
-	return getRandIntValue(r, []string{"status_code", "simple"})
+	randInt, _ := strconv.Atoi(getRandValue(r, []string{"internet", "http_status_simple"}))
+	return randInt
 }
 
 // LogLevel will generate a random log level
@@ -176,7 +180,7 @@ func FirefoxUserAgent() string { return firefoxUserAgent(globalFaker.Rand) }
 func (f *Faker) FirefoxUserAgent() string { return firefoxUserAgent(f.Rand) }
 
 func firefoxUserAgent(r *rand.Rand) string {
-	ver := "Gecko/" + date(r).Format("2006-02-01") + " Firefox/" + strconv.Itoa(randIntRange(r, 35, 37)) + ".0"
+	ver := "Gecko/" + date(r).Format("2006-01-02") + " Firefox/" + strconv.Itoa(randIntRange(r, 35, 37)) + ".0"
 	platforms := []string{
 		"(" + windowsPlatformToken(r) + "; " + "en-US" + "; rv:1.9." + strconv.Itoa(randIntRange(r, 0, 3)) + ".20) " + ver,
 		"(" + linuxPlatformToken(r) + "; rv:" + strconv.Itoa(randIntRange(r, 5, 8)) + ".0) " + ver,
