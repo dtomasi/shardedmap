@@ -1,6 +1,6 @@
 module github.com/dtomasi/shardedmap
 
-go 1.17
+go 1.19
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.10.0
