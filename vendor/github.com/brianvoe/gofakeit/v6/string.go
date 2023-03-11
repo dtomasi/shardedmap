@@ -1,6 +1,6 @@
 package gofakeit
 
-import rand "math/rand"
+import "math/rand"
 
 // Letter will generate a single random lower case ASCII letter
 func Letter() string { return letter(globalFaker.Rand) }
@@ -27,6 +27,14 @@ func letterN(r *rand.Rand, n uint) string {
 	}
 	return string(out)
 }
+
+// Vowel will generate a single random lower case vowel
+func Vowel() string { return vowel(globalFaker.Rand) }
+
+// Vowel will generate a single random lower case vowel
+func (f *Faker) Vowel() string { return vowel(f.Rand) }
+
+func vowel(r *rand.Rand) string { return string(randCharacter(r, vowels)) }
 
 // Digit will generate a single ASCII digit
 func Digit() string { return digit(globalFaker.Rand) }
@@ -142,6 +150,17 @@ func addStringLookup() {
 		},
 	})
 
+	AddFuncLookup("vowel", Info{
+		Display:     "Vowel",
+		Category:    "string",
+		Description: "Generate a single random lower case vowel",
+		Example:     "a",
+		Output:      "string",
+		Generate: func(r *rand.Rand, m *MapParams, info *Info) (interface{}, error) {
+			return vowel(r), nil
+		},
+	})
+
 	AddFuncLookup("digit", Info{
 		Display:     "Digit",
 		Category:    "string",
@@ -216,6 +235,7 @@ func addStringLookup() {
 		Description: "Shuffle an array of strings",
 		Example:     "hello,world,whats,up => whats,world,hello,up",
 		Output:      "[]string",
+		ContentType: "application/json",
 		Params: []Param{
 			{Field: "strs", Display: "Strings", Type: "[]string", Description: "Delimited separated strings"},
 		},
