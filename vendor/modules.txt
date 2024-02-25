@@ -1,5 +1,5 @@
-# github.com/brianvoe/gofakeit/v6 v6.10.0
-## explicit; go 1.15
+# github.com/brianvoe/gofakeit/v6 v6.28.0
+## explicit; go 1.21
 github.com/brianvoe/gofakeit/v6
 github.com/brianvoe/gofakeit/v6/data
 # github.com/davecgh/go-spew v1.1.0
