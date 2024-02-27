@@ -3,10 +3,13 @@ package gofakeit
 import (
 	crand "crypto/rand"
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/brianvoe/gofakeit/v6/data"
 )
@@ -14,12 +17,19 @@ import (
 const lowerStr = "abcdefghijklmnopqrstuvwxyz"
 const upperStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const numericStr = "0123456789"
-const specialStr = "!@#$%&*+-_=?:;,.|(){}<>"
+const specialStr = "@#$%&?|!(){}<>=*+-_:;,."
+const specialSafeStr = "@#$&?!-_*."
 const spaceStr = " "
 const allStr = lowerStr + upperStr + numericStr + specialStr + spaceStr
+const vowels = "aeiou"
 const hashtag = '#'
 const questionmark = '?'
+const dash = '-'
 const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+const minUint = 0
+const maxUint = ^uint(0)
+const minInt = -maxInt - 1
+const maxInt = int(^uint(0) >> 1)
 
 // Seed will set the global random value. Setting seed to 0 will use crypto/rand
 func Seed(seed int64) {
@@ -45,34 +55,12 @@ func dataCheck(dataVal []string) bool {
 	return checkOk
 }
 
-// Check if in lib
-func intDataCheck(dataVal []string) bool {
-	if len(dataVal) != 2 {
-		return false
-	}
-
-	_, checkOk := data.IntData[dataVal[0]]
-	if checkOk {
-		_, checkOk = data.IntData[dataVal[0]][dataVal[1]]
-	}
-
-	return checkOk
-}
-
 // Get Random Value
 func getRandValue(r *rand.Rand, dataVal []string) string {
 	if !dataCheck(dataVal) {
 		return ""
 	}
 	return data.Data[dataVal[0]][dataVal[1]][r.Intn(len(data.Data[dataVal[0]][dataVal[1]]))]
-}
-
-// Get Random Integer Value
-func getRandIntValue(r *rand.Rand, dataVal []string) int {
-	if !intDataCheck(dataVal) {
-		return 0
-	}
-	return data.IntData[dataVal[0]][dataVal[1]][r.Intn(len(data.IntData[dataVal[0]][dataVal[1]]))]
 }
 
 // Replace # with numbers
@@ -238,7 +226,7 @@ func equalSliceInt(a, b []int) bool {
 	return true
 }
 
-func equalSliceInterface(a, b []interface{}) bool {
+func equalSliceInterface(a, b []any) bool {
 	sizeA, sizeB := len(a), len(b)
 	if sizeA != sizeB {
 		return false
@@ -250,6 +238,79 @@ func equalSliceInterface(a, b []interface{}) bool {
 		}
 	}
 	return true
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func anyToString(a any) string {
+	if a == nil {
+		return ""
+	}
+
+	// If it's a slice of bytes or struct, unmarshal it into an interface
+	if bytes, ok := a.([]byte); ok {
+		return string(bytes)
+	}
+
+	// If it's a struct, map, or slice, convert to JSON
+	switch reflect.TypeOf(a).Kind() {
+	case reflect.Struct, reflect.Map, reflect.Slice:
+		b, err := json.Marshal(a)
+		if err == nil {
+			return string(b)
+		}
+	}
+
+	return fmt.Sprintf("%v", a)
+}
+
+// Title returns a copy of the string s with all Unicode letters that begin words
+// mapped to their Unicode title case
+func title(s string) string {
+	// isSeparator reports whether the rune could mark a word boundary
+	isSeparator := func(r rune) bool {
+		// ASCII alphanumerics and underscore are not separators
+		if r <= 0x7F {
+			switch {
+			case '0' <= r && r <= '9':
+				return false
+			case 'a' <= r && r <= 'z':
+				return false
+			case 'A' <= r && r <= 'Z':
+				return false
+			case r == '_':
+				return false
+			}
+			return true
+		}
+
+		// Letters and digits are not separators
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return false
+		}
+
+		// Otherwise, all we can do for now is treat spaces as separators.
+		return unicode.IsSpace(r)
+	}
+
+	prev := ' '
+	return strings.Map(
+		func(r rune) rune {
+			if isSeparator(prev) {
+				prev = r
+				return unicode.ToTitle(r)
+			}
+			prev = r
+			return r
+		},
+		s)
 }
 
 func funcLookupSplit(str string) []string {
