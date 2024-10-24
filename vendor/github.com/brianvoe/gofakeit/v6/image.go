@@ -7,7 +7,7 @@ import (
 	imgCol "image/color"
 	"image/jpeg"
 	"image/png"
-	rand "math/rand"
+	"math/rand"
 	"strconv"
 )
 
@@ -71,14 +71,14 @@ func addImageLookup() {
 	AddFuncLookup("imageurl", Info{
 		Display:     "Image URL",
 		Category:    "image",
-		Description: "Random image url",
+		Description: "Web address pointing to an image file that can be accessed and displayed online",
 		Example:     "https://picsum.photos/500/500",
 		Output:      "string",
 		Params: []Param{
 			{Field: "width", Display: "Width", Type: "int", Default: "500", Description: "Image width in px"},
 			{Field: "height", Display: "Height", Type: "int", Default: "500", Description: "Image height in px"},
 		},
-		Generate: func(r *rand.Rand, m *MapParams, info *Info) (interface{}, error) {
+		Generate: func(r *rand.Rand, m *MapParams, info *Info) (any, error) {
 			width, err := info.GetInt(m, "width")
 			if err != nil {
 				return nil, err
@@ -102,14 +102,15 @@ func addImageLookup() {
 	AddFuncLookup("imagejpeg", Info{
 		Display:     "Image JPEG",
 		Category:    "image",
-		Description: "Random jpeg image",
+		Description: "Image file format known for its efficient compression and compatibility",
 		Example:     "file.jpeg - bytes",
 		Output:      "[]byte",
+		ContentType: "image/jpeg",
 		Params: []Param{
 			{Field: "width", Display: "Width", Type: "int", Default: "500", Description: "Image width in px"},
 			{Field: "height", Display: "Height", Type: "int", Default: "500", Description: "Image height in px"},
 		},
-		Generate: func(r *rand.Rand, m *MapParams, info *Info) (interface{}, error) {
+		Generate: func(r *rand.Rand, m *MapParams, info *Info) (any, error) {
 			width, err := info.GetInt(m, "width")
 			if err != nil {
 				return nil, err
@@ -133,14 +134,15 @@ func addImageLookup() {
 	AddFuncLookup("imagepng", Info{
 		Display:     "Image PNG",
 		Category:    "image",
-		Description: "Random png image",
+		Description: "Image file format known for its lossless compression and support for transparency",
 		Example:     "file.png - bytes",
 		Output:      "[]byte",
+		ContentType: "image/png",
 		Params: []Param{
 			{Field: "width", Display: "Width", Type: "int", Default: "500", Description: "Image width in px"},
 			{Field: "height", Display: "Height", Type: "int", Default: "500", Description: "Image height in px"},
 		},
-		Generate: func(r *rand.Rand, m *MapParams, info *Info) (interface{}, error) {
+		Generate: func(r *rand.Rand, m *MapParams, info *Info) (any, error) {
 			width, err := info.GetInt(m, "width")
 			if err != nil {
 				return nil, err
