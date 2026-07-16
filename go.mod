@@ -1,9 +1,9 @@
 module github.com/dtomasi/shardedmap
 
-go 1.17
+go 1.21
 
 require (
-	github.com/brianvoe/gofakeit/v6 v6.10.0
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/stretchr/testify v1.7.0
 )
 

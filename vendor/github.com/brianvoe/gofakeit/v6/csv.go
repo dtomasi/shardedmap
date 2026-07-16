@@ -6,24 +6,35 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	rand "math/rand"
+	"math/rand"
+	"reflect"
 	"strings"
 )
 
 // CSVOptions defines values needed for csv generation
 type CSVOptions struct {
-	Delimiter string  `json:"delimiter" xml:"delimiter"`
-	RowCount  int     `json:"row_count" xml:"row_count"`
-	Fields    []Field `json:"fields" xml:"fields"`
+	Delimiter string  `json:"delimiter" xml:"delimiter" fake:"{randomstring:[,,tab]}"`
+	RowCount  int     `json:"row_count" xml:"row_count" fake:"{number:1,10}"`
+	Fields    []Field `json:"fields" xml:"fields" fake:"{fields}"`
 }
 
 // CSV generates an object or an array of objects in json format
-func CSV(co *CSVOptions) ([]byte, error) { return csvFunc(globalFaker.Rand, co) }
+// A nil CSVOptions returns a randomly structured CSV.
+func CSV(co *CSVOptions) ([]byte, error) { return csvFunc(globalFaker, co) }
 
 // CSV generates an object or an array of objects in json format
-func (f *Faker) CSV(co *CSVOptions) ([]byte, error) { return csvFunc(f.Rand, co) }
+// A nil CSVOptions returns a randomly structured CSV.
+func (f *Faker) CSV(co *CSVOptions) ([]byte, error) { return csvFunc(f, co) }
 
-func csvFunc(r *rand.Rand, co *CSVOptions) ([]byte, error) {
+func csvFunc(f *Faker, co *CSVOptions) ([]byte, error) {
+	if co == nil {
+		// We didn't get a CSVOptions, so create a new random one
+		err := f.Struct(&co)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Check delimiter
 	if co.Delimiter == "" {
 		co.Delimiter = ","
@@ -31,7 +42,7 @@ func csvFunc(r *rand.Rand, co *CSVOptions) ([]byte, error) {
 	if strings.ToLower(co.Delimiter) == "tab" {
 		co.Delimiter = "\t"
 	}
-	if co.Delimiter != "," && co.Delimiter != "\t" {
+	if co.Delimiter != "," && co.Delimiter != "\t" && co.Delimiter != ";" {
 		return nil, errors.New("invalid delimiter type")
 	}
 
@@ -56,11 +67,11 @@ func csvFunc(r *rand.Rand, co *CSVOptions) ([]byte, error) {
 	}
 	w.Write(header)
 
-	// Loop through row count and add fields
-	for i := 1; i < co.RowCount; i++ {
+	// Loop through row count +1(for header) and add fields
+	for i := 1; i < co.RowCount+1; i++ {
 		vr := make([]string, len(co.Fields))
 
-		// Loop through fields and add to them to map[string]interface{}
+		// Loop through fields and add to them to map[string]any
 		for ii, field := range co.Fields {
 			if field.Function == "autoincrement" {
 				vr[ii] = fmt.Sprintf("%d", i)
@@ -73,9 +84,30 @@ func csvFunc(r *rand.Rand, co *CSVOptions) ([]byte, error) {
 				return nil, errors.New("invalid function, " + field.Function + " does not exist")
 			}
 
-			value, err := funcInfo.Generate(r, &field.Params, funcInfo)
+			value, err := funcInfo.Generate(f.Rand, &field.Params, funcInfo)
 			if err != nil {
 				return nil, err
+			}
+
+			if _, ok := value.([]byte); ok {
+				// If it's a slice of bytes or struct, unmarshal it into an interface
+				var v any
+				if err := json.Unmarshal(value.([]byte), &v); err != nil {
+					return nil, err
+				}
+				value = v
+			}
+
+			// If the value is a list of possible values, marsha it into a string
+			if reflect.TypeOf(value).Kind() == reflect.Struct ||
+				reflect.TypeOf(value).Kind() == reflect.Ptr ||
+				reflect.TypeOf(value).Kind() == reflect.Map ||
+				reflect.TypeOf(value).Kind() == reflect.Slice {
+				b, err := json.Marshal(value)
+				if err != nil {
+					return nil, err
+				}
+				value = string(b)
 			}
 
 			vr[ii] = fmt.Sprintf("%v", value)
@@ -97,20 +129,25 @@ func addFileCSVLookup() {
 	AddFuncLookup("csv", Info{
 		Display:     "CSV",
 		Category:    "file",
-		Description: "Generates array of rows in csv format",
-		Example: `
-			id,first_name,last_name,password
-			1,Markus,Moen,Dc0VYXjkWABx
-			2,Osborne,Hilll,XPJ9OVNbs5lm
-		`,
-		Output: "[]byte",
+		Description: "Individual lines or data entries within a CSV (Comma-Separated Values) format",
+		Example: `id,first_name,last_name,password
+1,Markus,Moen,Dc0VYXjkWABx
+2,Osborne,Hilll,XPJ9OVNbs5lm`,
+		Output:      "[]byte",
+		ContentType: "text/csv",
 		Params: []Param{
-			{Field: "rowcount", Display: "Row Count", Type: "int", Default: "100", Description: "Number of rows in JSON array"},
-			{Field: "fields", Display: "Fields", Type: "[]Field", Description: "Fields containing key name and function to run in json format"},
 			{Field: "delimiter", Display: "Delimiter", Type: "string", Default: ",", Description: "Separator in between row values"},
+			{Field: "rowcount", Display: "Row Count", Type: "int", Default: "100", Description: "Number of rows"},
+			{Field: "fields", Display: "Fields", Type: "[]Field", Description: "Fields containing key name and function"},
 		},
-		Generate: func(r *rand.Rand, m *MapParams, info *Info) (interface{}, error) {
+		Generate: func(r *rand.Rand, m *MapParams, info *Info) (any, error) {
 			co := CSVOptions{}
+
+			delimiter, err := info.GetString(m, "delimiter")
+			if err != nil {
+				return nil, err
+			}
+			co.Delimiter = delimiter
 
 			rowcount, err := info.GetInt(m, "rowcount")
 			if err != nil {
@@ -131,18 +168,13 @@ func addFileCSVLookup() {
 					// Unmarshal fields string into fields array
 					err = json.Unmarshal([]byte(f), &co.Fields[i])
 					if err != nil {
-						return nil, errors.New("unable to decode json string")
+						return nil, err
 					}
 				}
 			}
 
-			delimiter, err := info.GetString(m, "delimiter")
-			if err != nil {
-				return nil, err
-			}
-			co.Delimiter = delimiter
-
-			csvOut, err := csvFunc(r, &co)
+			f := &Faker{Rand: r}
+			csvOut, err := csvFunc(f, &co)
 			if err != nil {
 				return nil, err
 			}
